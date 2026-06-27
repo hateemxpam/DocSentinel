@@ -1,0 +1,17 @@
+langchain
+langchain-community
+langchain-groq
+pymupdf
+sentence-transformers
+qdrant-client
+rank_bm25
+psycopg2-binary
+ragas
+fastapi
+uvicorn
+streamlit
+python-dotenv
+pandas
+numpy
+torch
+transformers

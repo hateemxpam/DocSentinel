@@ -8,7 +8,7 @@ If the confidence is too low, it blocks the query to prevent hallucination.
 """
 
 
-def apply_gate(scored_chunks: list[dict], threshold: float = 0.45) -> dict:
+def apply_gate(scored_chunks: list[dict], threshold: float = 0.50) -> dict:
     """
     Evaluate the top chunks against a confidence threshold.
 

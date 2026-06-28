@@ -10,16 +10,17 @@ from trust.scorer import score_all
 from trust.gate import apply_gate
 
 
-def run_trust_layer(chunks: list[dict]) -> dict:
+def run_trust_layer(chunks: list[dict], threshold: float = 0.50) -> dict:
     """
     Run the full trust evaluation pipeline.
 
     1. Scores all chunks (freshness, consistency, composite confidence).
     2. Sorts chunks by composite confidence.
-    3. Applies the quality gate (average of top 5 must beat 0.45).
+    3. Applies the quality gate (average of top 5 must beat threshold).
 
     Args:
         chunks: List of retrieved candidate chunks.
+        threshold: The confidence gate threshold to apply.
 
     Returns:
         A gate result dictionary containing 'passed', 'reason',
@@ -45,7 +46,7 @@ def run_trust_layer(chunks: list[dict]) -> dict:
     print(f"  Chunk confidences: {confidences[:5]}...")
 
     # Step 2: Apply quality gate
-    gate_result = apply_gate(scored_chunks, threshold=0.45)
+    gate_result = apply_gate(scored_chunks, threshold=threshold)
     
     avg_conf = gate_result["avg_confidence"]
     passed = gate_result["passed"]

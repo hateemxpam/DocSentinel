@@ -10,22 +10,25 @@ from ingestion.embedder import generate_embeddings
 from ingestion.store import store_in_qdrant, store_in_postgres
 
 
-def run() -> None:
+def run(specific_file: str | None = None) -> int:
     """
     Execute the complete ingestion pipeline.
 
     Steps:
-        1. Parse PDFs from the configured input directory.
-        2. Chunk the extracted text into smaller segments.
-        3. Generate metadata for each chunk.
-        4. Generate vector embeddings for each chunk.
-        5. Store chunks + embeddings in Qdrant.
-        6. Store chunk metadata in PostgreSQL (optional).
+        1. Parse PDFs (or specific_file).
+        2. Chunk the extracted text.
+        3. Generate metadata.
+        4. Generate vector embeddings.
+        5. Store chunks in Qdrant.
+        6. Store metadata in PostgreSQL.
+        
+    Returns:
+        int: Number of chunks stored.
     """
     try:
         # Step 1 — Parse PDFs
         print('\n[1/6] Parsing PDFs...')
-        pages = parse_pdfs()
+        pages = parse_pdfs(specific_file=specific_file)
         print(f'  Extracted {len(pages)} pages.')
 
         # Step 2 — Chunk text
@@ -50,6 +53,7 @@ def run() -> None:
         store_in_postgres(chunks, metadata_list)
 
         print(f'\nIngestion complete. {len(chunks)} chunks stored.')
+        return len(chunks)
 
     except Exception as e:
         print(f'[ERROR] Ingestion pipeline failed: {e}')

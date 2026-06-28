@@ -40,37 +40,25 @@ def _table_to_text(table) -> str:
     return "\n".join(lines)
 
 
-def parse_pdfs(data_dir: str | None = None) -> list[dict]:
-    """Parse all PDFs in *data_dir*, extracting text and tables per page.
-
-    For every page of every ``*.pdf`` file the function produces:
-
-    * One ``"text"`` record with the full page text.
-    * One ``"table"`` record **per table** detected on the page (if any).
+def parse_pdfs(data_dir: str | None = None, specific_file: str | None = None) -> list[dict]:
+    """Parse PDFs in data_dir, or a single specific_file, extracting text and tables.
 
     Args:
         data_dir: Path to the folder containing raw PDF files.
-                  Defaults to ``<project_root>/data/raw/`` when *None*.
+        specific_file: Path to a single specific PDF file.
 
     Returns:
-        A list of dicts, each with the keys:
-        ``page_number``, ``content``, ``content_type``, ``source_filename``.
+        List of parsed page dictionaries.
     """
-
-    # ------------------------------------------------------------------
-    # 1. Resolve the data directory – fall back to project-relative path.
-    # ------------------------------------------------------------------
     if data_dir is None:
-        # __file__ lives in <project>/ingestion/parser.py
-        # Two dirname() calls reach the project root.
         project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         data_dir = os.path.join(project_root, "data", "raw")
 
-    # ------------------------------------------------------------------
-    # 2. Discover all PDF files using glob.
-    # ------------------------------------------------------------------
-    pdf_pattern = os.path.join(data_dir, "*.pdf")
-    pdf_files = sorted(glob.glob(pdf_pattern))
+    if specific_file is not None:
+        pdf_files = [specific_file]
+    else:
+        pdf_pattern = os.path.join(data_dir, "*.pdf")
+        pdf_files = sorted(glob.glob(pdf_pattern))
 
     if not pdf_files:
         logger.warning("No PDF files found in '%s'.", data_dir)

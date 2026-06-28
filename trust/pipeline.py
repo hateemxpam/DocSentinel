@@ -53,8 +53,8 @@ def run_trust_layer(chunks: list[dict]) -> dict:
     print(f"  Avg top-5 confidence: {avg_conf:.2f}")
     
     if passed:
-        print("  Gate: PASSED ✅ -> Proceeding to Generation")
+        print("  Gate: PASSED [OK] -> Proceeding to Generation")
     else:
-        print("  Gate: BLOCKED ❌ -> Source material insufficient")
+        print("  Gate: BLOCKED [FAIL] -> Source material insufficient")
 
     return gate_result

@@ -21,3 +21,7 @@ venv/
 *.egg-info/
 dist/
 build/
+
+# Office / Temporary documents
+*.docx
+~$*

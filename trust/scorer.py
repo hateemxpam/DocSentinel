@@ -39,14 +39,15 @@ def score_chunk(chunk: dict) -> dict:
     trust = float(chunk.get("trust_score", 0.0))
     reranker = float(chunk.get("reranker_score", 0.0))
 
-    # Normalize reranker if it's not strictly 0-1 (Cross-encoders often output logits)
-    # For ms-marco, we might apply a sigmoid if needed, but for now we trust
-    # it is appropriately scaled or bounded by the caller. Assuming 0-1 here.
-    # To be safe against negatives or >1:
+    # Normalize reranker if it's not strictly 0-1 (Cross-encoders output logits).
+    # We apply a standard sigmoid function to map real-valued logits to (0, 1).
+    import math
+    try:
+        reranker_norm = 1.0 / (1.0 + math.exp(-reranker))
+    except Exception:
+        reranker_norm = max(0.0, min(1.0, reranker))
+    
     trust = max(0.0, min(1.0, trust))
-    # If reranker is logit, simple normalization: clamp to 0-1 for demo purposes
-    # A true sigmoid: 1 / (1 + math.exp(-reranker))
-    reranker_norm = max(0.0, min(1.0, reranker))
 
     # 4. Composite Formula
     confidence = (

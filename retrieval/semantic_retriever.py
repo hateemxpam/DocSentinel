@@ -48,8 +48,12 @@ class SemanticRetriever:
         """
         qdrant_host = os.getenv("QDRANT_HOST", "localhost")
         qdrant_port = int(os.getenv("QDRANT_PORT", "6333"))
-
-        self.client = QdrantClient(host=qdrant_host, port=qdrant_port)
+        qdrant_api_key = os.getenv("QDRANT_API_KEY")
+        
+        if qdrant_host.startswith("http://") or qdrant_host.startswith("https://"):
+            self.client = QdrantClient(url=qdrant_host, api_key=qdrant_api_key)
+        else:
+            self.client = QdrantClient(host=qdrant_host, port=qdrant_port, api_key=qdrant_api_key)
         self.collection_name: str = "docsentinel"
 
         print("Semantic retriever connected to Qdrant.")

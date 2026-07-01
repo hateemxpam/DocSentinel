@@ -31,7 +31,12 @@ def store_in_qdrant(chunks: list, metadata_list: list, embeddings) -> None:
         # Connect to Qdrant using environment variables
         host = os.getenv('QDRANT_HOST', 'localhost')
         port = int(os.getenv('QDRANT_PORT', 6333))
-        client = qdrant_client.QdrantClient(host=host, port=port)
+        api_key = os.getenv('QDRANT_API_KEY')
+        
+        if host.startswith("http://") or host.startswith("https://"):
+            client = qdrant_client.QdrantClient(url=host, api_key=api_key)
+        else:
+            client = qdrant_client.QdrantClient(host=host, port=port, api_key=api_key)
 
         collection_name = "docsentinel"
 

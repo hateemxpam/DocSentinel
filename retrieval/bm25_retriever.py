@@ -65,7 +65,12 @@ class BM25Retriever:
             try:
                 qdrant_host = os.getenv("QDRANT_HOST", "localhost")
                 qdrant_port = int(os.getenv("QDRANT_PORT", "6333"))
-                client = QdrantClient(host=qdrant_host, port=qdrant_port)
+                qdrant_api_key = os.getenv("QDRANT_API_KEY")
+                
+                if qdrant_host.startswith("http://") or qdrant_host.startswith("https://"):
+                    client = QdrantClient(url=qdrant_host, api_key=qdrant_api_key)
+                else:
+                    client = QdrantClient(host=qdrant_host, port=qdrant_port, api_key=qdrant_api_key)
 
                 # Scroll through the entire 'docsentinel' collection
                 records, _next_offset = client.scroll(

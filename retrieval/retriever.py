@@ -134,8 +134,12 @@ def _fetch_metadata_qdrant(chunk_ids: list[str]) -> dict:
         # Qdrant connection settings from environment (defaults to localhost)
         qdrant_host = os.getenv("QDRANT_HOST", "localhost")
         qdrant_port = int(os.getenv("QDRANT_PORT", "6333"))
+        qdrant_api_key = os.getenv("QDRANT_API_KEY")
 
-        client = QdrantClient(host=qdrant_host, port=qdrant_port)
+        if qdrant_host.startswith("http://") or qdrant_host.startswith("https://"):
+            client = QdrantClient(url=qdrant_host, api_key=qdrant_api_key)
+        else:
+            client = QdrantClient(host=qdrant_host, port=qdrant_port, api_key=qdrant_api_key)
 
         # Scroll all points with their payloads
         # NOTE: For very large collections a filtered scroll per chunk_id

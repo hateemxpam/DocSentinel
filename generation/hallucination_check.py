@@ -7,8 +7,7 @@ returning a boolean flag.
 """
 
 import os
-from langchain_groq import ChatGroq
-from langchain_core.messages import SystemMessage, HumanMessage
+
 
 
 def check(answer: str, context_text: str) -> dict:
@@ -26,17 +25,8 @@ def check(answer: str, context_text: str) -> dict:
     if answer == "INSUFFICIENT_CONTEXT":
         return {"hallucination": False}
 
-    api_key = os.getenv("GROQ_API_KEY")
-    if not api_key:
-        print("[hallucination_check] WARNING: GROQ_API_KEY not found. Skipping check.")
-        return {"hallucination": False}
-
-    # Initialize checker model
-    chat = ChatGroq(
-        model_name="llama-3.3-70b-versatile",
-        temperature=0.2,
-        api_key=api_key,
-    )
+    # Import shared generate wrapper
+    from generation.llm import generate
 
     system_prompt = (
         "You are a strict compliance auditor. Your job is to verify if an answer "
@@ -55,15 +45,14 @@ Answer to check:
 {answer}
 """
 
-    messages = [
-        SystemMessage(content=system_prompt),
-        HumanMessage(content=checker_prompt),
-    ]
-
     try:
-        print("Calling LLM for hallucination check...")
-        response = chat.invoke(messages)
-        response_text = str(response.content).strip().upper()
+        # Route specifically to llama-3.1-8b-instant for fast, low-token cost checks
+        response_text = generate(
+            system_prompt=system_prompt,
+            query=checker_prompt,
+            primary_model="llama-3.1-8b-instant"
+        )
+        response_text = str(response_text).strip().upper()
         print(f"Hallucination check response: {response_text}")
 
         # Evaluate response

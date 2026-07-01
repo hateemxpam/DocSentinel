@@ -58,7 +58,7 @@ def calculate_metrics(results: list[dict]) -> dict:
         raise ValueError("GROQ_API_KEY not found in environment.")
 
     groq_llm = ChatGroq(
-        model_name="llama-3.3-70b-versatile",
+        model_name="llama-3.1-8b-instant",
         temperature=0.0,
         api_key=api_key
     )

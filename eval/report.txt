@@ -1,0 +1,29 @@
+╔══════════════════════════════════════╗
+║     DocSentinel Evaluation Report    ║
+╚══════════════════════════════════════╝
+
+📊 RAGAs Scores:
+─────────────────────────────────────
+Faithfulness:       0.00  (hallucination measure)
+Answer Relevancy:   0.00  (answered right question?)
+Context Precision:  0.00  (right chunks retrieved?)
+Context Recall:     0.00  (all chunks found?)
+─────────────────────────────────────
+Overall Score:      0.00  (average of all 4)
+
+📋 Query Results:
+─────────────────────────────────────
+Q1: What are the data subject rights under GDPR?... → SUCCESS | confidence: 0.72
+Q2: What is the purpose of the EU AI Act?... → INSUFFICIENT_CONTEXT | confidence: 0.72
+Q3: What are high risk AI systems under EU AI Act... → INSUFFICIENT_CONTEXT | confidence: 0.73
+Q4: What is GDPR lawful basis for processing?... → INSUFFICIENT_CONTEXT | confidence: 0.68
+Q5: What are obligations of data controllers unde... → INSUFFICIENT_CONTEXT | confidence: 0.73
+Q6: What is the right to erasure under GDPR?... → INSUFFICIENT_CONTEXT | confidence: 0.69
+Q7: How does EU AI Act classify AI risk levels?... → INSUFFICIENT_CONTEXT | confidence: 0.75
+Q8: What are penalties for GDPR violation?... → INSUFFICIENT_CONTEXT | confidence: 0.50
+Q9: What is a Data Protection Officer?... → INSUFFICIENT_CONTEXT | confidence: 0.76
+Q10: What AI practices are prohibited under EU AI ... → INSUFFICIENT_CONTEXT | confidence: 0.74
+─────────────────────────────────────
+⚠️  Skipped Queries: 9
+✅  Successful:      1
+🚫  Blocked:         0

@@ -127,12 +127,12 @@ async def health_check():
     qdrant_ok = "ok"
     postgres_ok = "ok"
 
-    # 1. Qdrant Health Check
+    # 1. Qdrant Health Check - supports both local and cloud URLs
     try:
         qdrant_host = os.getenv("QDRANT_HOST", "localhost")
         qdrant_port = int(os.getenv("QDRANT_PORT", "6333"))
         qdrant_api_key = os.getenv("QDRANT_API_KEY")
-        
+
         if qdrant_host.startswith("http://") or qdrant_host.startswith("https://"):
             client = QdrantClient(url=qdrant_host, api_key=qdrant_api_key)
         else:
@@ -153,18 +153,12 @@ async def health_check():
         print(f"[api/routes] Postgres health check failed: {exc}")
         postgres_ok = "failed"
 
-    status = "healthy" if qdrant_ok == "ok" and postgres_ok == "ok" else "unhealthy"
-    
-    health_response = {
-        "status": status,
+    return {
+        "status": "healthy" if qdrant_ok == "ok" and postgres_ok == "ok" else "unhealthy",
         "qdrant": qdrant_ok,
         "postgres": postgres_ok
     }
 
-    if status == "unhealthy":
-        raise HTTPException(status_code=500, detail=health_response)
-        
-    return health_response
 
 
 @router.get("/stats", response_model=StatsResponse)

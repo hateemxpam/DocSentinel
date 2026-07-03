@@ -97,7 +97,7 @@ with st.sidebar:
     # A. System Status Section
     st.subheader("🌐 System Status")
     try:
-        health_resp = requests.get(f"{API_URL}/health", timeout=3)
+        health_resp = requests.get(f"{API_URL}/health", timeout=15)
         if health_resp.status_code == 200:
             health_data = health_resp.json()
             qdrant_status = "✅ Connected" if health_data.get("qdrant") == "ok" else "❌ Failed"
@@ -115,7 +115,7 @@ with st.sidebar:
     # B. Statistics Section
     st.subheader("📈 Usage Statistics")
     try:
-        stats_resp = requests.get(f"{API_URL}/stats", timeout=3)
+        stats_resp = requests.get(f"{API_URL}/stats", timeout=15)
         if stats_resp.status_code == 200:
             stats = stats_resp.json()
             st.markdown(f"**Total Queries:** {stats.get('total_queries', 0)}")

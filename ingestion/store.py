@@ -74,9 +74,21 @@ def store_in_qdrant(chunks: list, metadata_list: list, embeddings) -> None:
                 )
             )
 
-        # Upsert all points in a single batch
-        client.upsert(collection_name=collection_name, points=points)
-        print(f"  Successfully stored {len(points)} chunks in Qdrant.")
+        # Upsert points in smaller batches to prevent write timeouts over the network
+        batch_size = 200
+        total_points = len(points)
+        print(f"  Uploading {total_points} chunks to Qdrant in batches of {batch_size}...")
+        
+        for i in range(0, total_points, batch_size):
+            batch = points[i : i + batch_size]
+            client.upsert(
+                collection_name=collection_name,
+                points=batch,
+                timeout=60  # Extend network timeout to 60s
+            )
+            print(f"    Uploaded chunks {i + 1} to {min(i + batch_size, total_points)}...")
+            
+        print(f"  Successfully stored all {total_points} chunks in Qdrant.")
 
     except Exception as e:
         print(f"[ERROR] Failed to store chunks in Qdrant: {e}")

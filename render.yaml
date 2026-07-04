@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: docsentinel-api
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn api.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: QDRANT_HOST
+        sync: false
+      - key: QDRANT_API_KEY
+        sync: false
+      - key: QDRANT_PORT
+        value: "6333"
+      - key: POSTGRES_URL
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: HF_TOKEN
+        sync: false
+    healthCheckPath: /health

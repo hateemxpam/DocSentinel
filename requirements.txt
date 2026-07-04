@@ -8,10 +8,12 @@ rank_bm25
 psycopg2-binary
 ragas
 fastapi
-uvicorn
+uvicorn[standard]
 streamlit
 python-dotenv
 pandas
 numpy
 torch
 transformers
+python-multipart
+requests

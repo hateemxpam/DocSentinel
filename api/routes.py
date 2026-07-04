@@ -6,7 +6,7 @@ routes.py - FastAPI Routes and Endpoint Implementations for DocSentinel API
 import os
 import time
 import shutil
-from fastapi import APIRouter, File, UploadFile, HTTPException
+from fastapi import APIRouter, File, Form, UploadFile, HTTPException
 from qdrant_client import QdrantClient
 
 # Import pipeline components
@@ -86,7 +86,7 @@ async def query_pipeline(request: QueryRequest):
 
 
 @router.post("/upload", response_model=UploadResponse)
-async def upload_policy(file: UploadFile = File(...), session_id: str = "global"):
+async def upload_policy(file: UploadFile = File(...), session_id: str = Form("global")):
     """
     Upload a new policy document (PDF) and parse/ingest it into Qdrant & PostgreSQL
     under the given session_id so it is only visible to this user's session.

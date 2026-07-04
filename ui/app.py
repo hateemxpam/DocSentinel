@@ -4,7 +4,6 @@ app.py - Streamlit User Interface for DocSentinel Compliance Assistant
 """
 
 import uuid
-import time
 import requests
 import pandas as pd
 import streamlit as st
@@ -15,133 +14,412 @@ API_URL = "http://localhost:8000"
 
 # --- 1. Page Configuration ---
 st.set_page_config(
-    page_title="DocSentinel",
+    page_title="DocSentinel — Intelligent Compliance Assistant",
     page_icon="🛡️",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Inject modern, premium HSL tailored dark-mode styles
+# --- 2. Premium CSS Design System ---
 st.markdown("""
 <style>
-    /* Premium layout styles */
-    .reportview-container {
-        background: #0e1117;
-    }
-    .main .block-container {
-        padding-top: 2rem;
-        padding-bottom: 2rem;
-    }
-    h1, h2, h3 {
-        font-family: 'Outfit', 'Inter', sans-serif;
-        font-weight: 700;
-    }
-    .stTextInput>div>div>input {
-        background-color: #1a1f2c;
-        color: #ffffff;
-        border: 1px solid #30363d;
-        border-radius: 8px;
-        padding: 10px 15px;
-    }
-    /* Metric styling */
-    div[data-testid="metric-container"] {
-        background-color: #161b22;
-        border: 1px solid #30363d;
-        padding: 12px 18px;
-        border-radius: 10px;
-    }
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+/* ── Global reset ── */
+html, body, [class*="css"] {
+    font-family: 'Inter', sans-serif;
+}
+.main .block-container {
+    padding: 2.5rem 3rem 3rem 3rem;
+    max-width: 1100px;
+}
+
+/* ── Hide Streamlit chrome ── */
+#MainMenu, footer, header { visibility: hidden; }
+.stDeployButton { display: none; }
+
+/* ── Sidebar ── */
+[data-testid="stSidebar"] {
+    background: linear-gradient(180deg, #0d1117 0%, #0d1320 100%);
+    border-right: 1px solid #1e2a3a;
+}
+[data-testid="stSidebar"] .block-container {
+    padding: 2rem 1.4rem;
+}
+
+/* ── Sidebar logo area ── */
+.ds-logo-wrap {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 6px;
+}
+.ds-logo-icon {
+    font-size: 32px;
+    line-height: 1;
+}
+.ds-logo-text {
+    font-size: 20px;
+    font-weight: 700;
+    color: #e6edf3;
+    letter-spacing: -0.3px;
+}
+.ds-logo-sub {
+    font-size: 11px;
+    color: #5a7a9a;
+    margin-top: 2px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+/* ── Sidebar section labels ── */
+.sb-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: #3d5a78;
+    margin: 20px 0 8px 0;
+}
+
+/* ── Status pill ── */
+.status-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    background: #0f1923;
+    border: 1px solid #1e2a3a;
+    border-radius: 8px;
+    margin-bottom: 6px;
+}
+.status-label { font-size: 13px; color: #7a9bbf; }
+.status-ok   { font-size: 12px; font-weight: 600; color: #22c55e; }
+.status-fail { font-size: 12px; font-weight: 600; color: #ef4444; }
+
+/* ── Total queries chip ── */
+.stat-chip {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: #0f1923;
+    border: 1px solid #1e2a3a;
+    border-radius: 8px;
+    margin-bottom: 6px;
+}
+.stat-chip-icon { font-size: 18px; }
+.stat-chip-val  { font-size: 22px; font-weight: 700; color: #58a6ff; line-height: 1; }
+.stat-chip-desc { font-size: 11px; color: #5a7a9a; margin-top: 1px; }
+
+/* ── Session chip ── */
+.session-chip {
+    padding: 8px 12px;
+    background: #0f1923;
+    border: 1px solid #1e2a3a;
+    border-radius: 8px;
+    font-size: 12px;
+    color: #5a7a9a;
+}
+.session-id {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: #58a6ff;
+}
+
+/* ── Main header ── */
+.ds-header {
+    margin-bottom: 2rem;
+}
+.ds-title {
+    font-size: 36px;
+    font-weight: 700;
+    color: #e6edf3;
+    letter-spacing: -0.8px;
+    line-height: 1.1;
+    margin: 0;
+}
+.ds-title span { color: #58a6ff; }
+.ds-subtitle {
+    font-size: 14px;
+    color: #5a7a9a;
+    margin-top: 6px;
+    font-weight: 400;
+}
+.ds-subtitle b { color: #7a9bbf; font-weight: 500; }
+
+/* ── Search bar wrapper ── */
+.search-wrap {
+    background: #0f1923;
+    border: 1px solid #1e2a3a;
+    border-radius: 14px;
+    padding: 1.4rem 1.6rem;
+    margin-bottom: 1.2rem;
+    transition: border-color 0.2s;
+}
+.search-wrap:hover { border-color: #2d4a6a; }
+
+/* ── Streamlit input override ── */
+.stTextInput > div > div > input {
+    background: #141d2b !important;
+    color: #e6edf3 !important;
+    border: 1px solid #1e2a3a !important;
+    border-radius: 10px !important;
+    font-size: 15px !important;
+    padding: 12px 16px !important;
+    font-family: 'Inter', sans-serif !important;
+}
+.stTextInput > div > div > input:focus {
+    border-color: #58a6ff !important;
+    box-shadow: 0 0 0 3px rgba(88,166,255,0.1) !important;
+}
+
+/* ── Buttons ── */
+.stButton > button {
+    border-radius: 10px !important;
+    font-family: 'Inter', sans-serif !important;
+    font-weight: 600 !important;
+    font-size: 14px !important;
+    transition: all 0.2s ease !important;
+}
+.stButton > button[kind="primary"] {
+    background: linear-gradient(135deg, #1f6feb 0%, #388bfd 100%) !important;
+    border: none !important;
+    color: #fff !important;
+    padding: 0.55rem 1.4rem !important;
+}
+.stButton > button[kind="primary"]:hover {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 6px 20px rgba(31,111,235,0.4) !important;
+}
+.stButton > button[kind="secondary"] {
+    background: transparent !important;
+    border: 1px solid #1e2a3a !important;
+    color: #7a9bbf !important;
+}
+.stButton > button[kind="secondary"]:hover {
+    border-color: #58a6ff !important;
+    color: #58a6ff !important;
+}
+
+/* ── Response card ── */
+.resp-card {
+    background: #0d1117;
+    border: 1px solid #1e2a3a;
+    border-radius: 14px;
+    padding: 1.6rem 2rem;
+    margin-top: 1.2rem;
+}
+.resp-status-success {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    background: rgba(34,197,94,0.1);
+    border: 1px solid rgba(34,197,94,0.3);
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #22c55e;
+    margin-bottom: 1.2rem;
+}
+.resp-status-blocked {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    background: rgba(239,68,68,0.1);
+    border: 1px solid rgba(239,68,68,0.3);
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #ef4444;
+    margin-bottom: 1.2rem;
+}
+.resp-status-warning {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    background: rgba(245,158,11,0.1);
+    border: 1px solid rgba(245,158,11,0.3);
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #f59e0b;
+    margin-bottom: 1.2rem;
+}
+.resp-answer {
+    font-size: 15px;
+    line-height: 1.75;
+    color: #c9d1d9;
+    white-space: pre-wrap;
+}
+.conf-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 16px;
+    padding: 7px 16px;
+    background: #0f1923;
+    border: 1px solid #1e2a3a;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #5a7a9a;
+}
+.conf-value {
+    font-weight: 700;
+    font-size: 16px;
+}
+
+/* ── Divider ── */
+.ds-divider {
+    border: none;
+    border-top: 1px solid #1e2a3a;
+    margin: 1.4rem 0;
+}
+
+/* ── Recent queries ── */
+.recent-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #3d5a78;
+    margin-bottom: 10px;
+}
+.stButton > button.hist-btn {
+    text-align: left !important;
+    font-weight: 400 !important;
+    font-size: 13px !important;
+    color: #7a9bbf !important;
+}
+
+/* ── File uploader ── */
+[data-testid="stFileUploader"] {
+    background: #0f1923;
+    border: 1px dashed #1e2a3a;
+    border-radius: 10px;
+    padding: 0.5rem;
+}
+
+/* ── Streamlit expander ── */
+details {
+    background: #0f1923 !important;
+    border: 1px solid #1e2a3a !important;
+    border-radius: 10px !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
-# --- 2. Session State Initialization ---
+# --- 3. Session State ---
 if "history" not in st.session_state:
     st.session_state.history = []
-
 if "query_input" not in st.session_state:
     st.session_state.query_input = ""
-
-# Generate a unique session_id for this browser session
 if "session_id" not in st.session_state:
     st.session_state.session_id = str(uuid.uuid4())
+if "last_response" not in st.session_state:
+    st.session_state.last_response = None
 
 
-# --- Helper to Trigger Query Run ---
+# --- 4. Query Executor ---
 def execute_query(query_text):
     if not query_text.strip():
         st.warning("Please enter a valid question.")
         return
 
-    # Add to history (keep top 5 unique)
     if query_text not in st.session_state.history:
         st.session_state.history.insert(0, query_text)
         st.session_state.history = st.session_state.history[:5]
 
-    with st.spinner("🔍 Searching documents and verifying trust..."):
+    with st.spinner("Analysing documents and generating response…"):
         try:
             payload = {
                 "query": query_text,
                 "min_confidence": 0.50,
                 "session_id": st.session_state.session_id,
             }
-            response = requests.post(f"{API_URL}/query", json=payload, timeout=30)
-            
+            response = requests.post(f"{API_URL}/query", json=payload, timeout=60)
             if response.status_code == 200:
-                data = response.json()
-                st.session_state.last_response = data
+                st.session_state.last_response = response.json()
             else:
-                st.error(f"API Error (HTTP {response.status_code}): {response.text}")
+                st.error(f"API Error ({response.status_code}): {response.text}")
                 st.session_state.last_response = None
         except Exception as exc:
-            st.error(f"Failed to connect to DocSentinel API at {API_URL}: {exc}")
+            st.error(f"Could not reach DocSentinel API: {exc}")
             st.session_state.last_response = None
 
 
-# --- 3. Sidebar Panel ---
+# ═══════════════════════════════════════════════
+#  SIDEBAR
+# ═══════════════════════════════════════════════
 with st.sidebar:
-    st.image("https://img.icons8.com/nolan/96/shield.png", width=70)
-    st.title("DocSentinel Panel")
-    st.markdown("---")
+    # Logo
+    st.markdown("""
+    <div class="ds-logo-wrap">
+        <span class="ds-logo-icon">🛡️</span>
+        <div>
+            <div class="ds-logo-text">DocSentinel</div>
+            <div class="ds-logo-sub">Compliance Intelligence</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
-    # A. System Status Section
-    st.subheader("🌐 System Status")
+    # ── System Status ──
+    st.markdown('<div class="sb-label">System Status</div>', unsafe_allow_html=True)
     try:
         health_resp = requests.get(f"{API_URL}/health", timeout=15)
         if health_resp.status_code == 200:
-            health_data = health_resp.json()
-            qdrant_status = "✅ Connected" if health_data.get("qdrant") == "ok" else "❌ Failed"
-            postgres_status = "✅ Connected" if health_data.get("postgres") == "ok" else "❌ Failed"
-            
-            st.markdown(f"**Qdrant:** {qdrant_status}")
-            st.markdown(f"**PostgreSQL:** {postgres_status}")
+            h = health_resp.json()
+            qdrant_cls  = "status-ok"   if h.get("qdrant")   == "ok" else "status-fail"
+            qdrant_txt  = "Online"       if h.get("qdrant")   == "ok" else "Offline"
+            postgres_cls = "status-ok"  if h.get("postgres") == "ok" else "status-fail"
+            postgres_txt = "Online"      if h.get("postgres") == "ok" else "Offline"
+            st.markdown(f"""
+            <div class="status-row">
+                <span class="status-label">Vector DB (Qdrant)</span>
+                <span class="{qdrant_cls}">● {qdrant_txt}</span>
+            </div>
+            <div class="status-row">
+                <span class="status-label">PostgreSQL</span>
+                <span class="{postgres_cls}">● {postgres_txt}</span>
+            </div>
+            """, unsafe_allow_html=True)
         else:
-            st.error("❌ API Health Check Failed")
+            st.markdown('<div class="status-row"><span class="status-label">API</span><span class="status-fail">● Offline</span></div>', unsafe_allow_html=True)
     except Exception:
-        st.error("❌ DocSentinel API is offline")
+        st.markdown('<div class="status-row"><span class="status-label">API</span><span class="status-fail">● Unreachable</span></div>', unsafe_allow_html=True)
 
-    st.markdown("---")
-
-    # B. Statistics Section
-    st.subheader("📈 Usage Statistics")
+    # ── Total Queries ──
+    st.markdown('<div class="sb-label">Usage</div>', unsafe_allow_html=True)
     try:
-        stats_resp = requests.get(f"{API_URL}/stats", timeout=15)
+        stats_resp = requests.get(f"{API_URL}/stats", timeout=10)
         if stats_resp.status_code == 200:
             stats = stats_resp.json()
-            st.markdown(f"**Total Queries:** {stats.get('total_queries', 0)}")
-            st.markdown(f"**Cache Hit Rate:** {stats.get('cache_hit_rate', 0.0) * 100:.1f}%")
-            st.markdown(f"**Avg Latency:** {stats.get('avg_latency_ms', 0.0):.0f} ms")
+            total = stats.get("total_queries", 0)
+            st.markdown(f"""
+            <div class="stat-chip">
+                <span class="stat-chip-icon">💬</span>
+                <div>
+                    <div class="stat-chip-val">{total:,}</div>
+                    <div class="stat-chip-desc">Total Queries Processed</div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
         else:
-            st.caption("Unable to load stats")
+            st.caption("Stats unavailable")
     except Exception:
-        st.caption("API Offline — statistics unavailable")
+        st.caption("Stats unavailable")
 
-    st.markdown("---")
-
-    # C. File Uploader Section
-    st.subheader("📥 Upload Policy Documents")
-    uploaded_file = st.file_uploader("Select a policy document (PDF only)", type=["pdf"])
+    # ── Upload ──
+    st.markdown('<div class="sb-label">Upload Document</div>', unsafe_allow_html=True)
+    uploaded_file = st.file_uploader(
+        "PDF only", type=["pdf"], label_visibility="collapsed"
+    )
     if uploaded_file is not None:
-        if st.button("Process & Ingest Document", use_container_width=True):
-            with st.spinner("⏳ Parsing, chunking and embedding document..."):
+        if st.button("⚡ Ingest Document", use_container_width=True, type="primary"):
+            with st.spinner("Parsing, chunking and embedding…"):
                 try:
                     files = {"file": (uploaded_file.name, uploaded_file.getvalue(), "application/pdf")}
                     up_resp = requests.post(
@@ -150,170 +428,147 @@ with st.sidebar:
                         data={"session_id": st.session_state.session_id},
                         timeout=120
                     )
-                    
                     if up_resp.status_code == 200:
-                        up_data = up_resp.json()
-                        st.success(f"Ingested '{up_data.get('filename')}' successfully! Created {up_data.get('chunks_stored')} chunks.")
-                        st.rerun()
+                        d = up_resp.json()
+                        st.success(f"✅ {d.get('filename')} ingested — {d.get('chunks_stored')} chunks created.")
                     else:
                         st.error(f"Ingestion failed: {up_resp.text}")
                 except Exception as exc:
-                    st.error(f"Error connecting to ingestion service: {exc}")
+                    st.error(f"Error: {exc}")
 
-    st.markdown("---")
-
-    # D. Session Management
-    st.subheader("🗂️ My Session")
-    st.caption(f"Session ID: `{st.session_state.session_id[:8]}...`")
-    st.caption("GDPR & EU AI Act are always available to all users.")
-    if st.button("🗑️ Clear My Documents", use_container_width=True, type="secondary"):
-        try:
-            del_resp = requests.delete(
-                f"{API_URL}/session/{st.session_state.session_id}", timeout=10
-            )
-            if del_resp.status_code == 200:
-                data = del_resp.json()
-                st.success(f"Cleared {data.get('chunks_deleted', 0)} chunks from your session.")
-                # Generate a fresh session_id
-                st.session_state.session_id = str(uuid.uuid4())
-                st.rerun()
-            else:
-                st.error("Failed to clear session.")
-        except Exception as exc:
-            st.error(f"Error: {exc}")
-
-    st.markdown("---")
-
-    # E. Cache Management
-    st.subheader("🧹 Cache Management")
-    if st.button("Clear Semantic Cache", use_container_width=True, type="secondary"):
-        try:
-            del_resp = requests.delete(f"{API_URL}/cache", timeout=5)
-            if del_resp.status_code == 200:
-                st.success("Semantic cache cleared successfully!")
-                st.rerun()
-            else:
-                st.error("Failed to clear cache.")
-        except Exception as exc:
-            st.error(f"Error connecting to cache service: {exc}")
+    # ── Session ──
+    st.markdown('<div class="sb-label">Session</div>', unsafe_allow_html=True)
+    short_id = st.session_state.session_id[:8]
+    st.markdown(f"""
+    <div class="session-chip">
+        Session ID &nbsp;<span class="session-id">{short_id}…</span>
+    </div>
+    <div style="font-size:11px; color:#3d5a78; margin-top:6px; padding: 0 2px;">
+        GDPR &amp; EU AI Act available to all users by default.
+    </div>
+    """, unsafe_allow_html=True)
 
 
-# --- 4. Main Panel Area ---
+# ═══════════════════════════════════════════════
+#  MAIN PANEL
+# ═══════════════════════════════════════════════
+
 # Header
-st.title("🛡️ DocSentinel")
-st.markdown("##### Intelligent Policy Compliance Assistant | *Powered by Meta Llama 3.3 70B & Hybrid RAG*")
-st.markdown("---")
+st.markdown("""
+<div class="ds-header">
+    <div class="ds-title">🛡️ Doc<span>Sentinel</span></div>
+    <div class="ds-subtitle">
+        Intelligent Policy Compliance Assistant &nbsp;·&nbsp;
+        <b>Llama 3.3 70B</b> &nbsp;·&nbsp; <b>Hybrid RAG</b> &nbsp;·&nbsp; <b>Trust-Gated</b>
+    </div>
+</div>
+""", unsafe_allow_html=True)
 
-# Query input
-query_input = st.text_input(
-    "Ask a compliance question...", 
-    value=st.session_state.query_input,
-    placeholder="e.g., What are the administrative fines for GDPR violations?"
-)
-
-col1, col2 = st.columns([1.5, 8.5])
-with col1:
-    ask_clicked = st.button("🚀 Ask DocSentinel", use_container_width=True, type="primary")
-with col2:
-    if st.button("🧹 Clear Input", use_container_width=False):
-        st.session_state.query_input = ""
-        st.rerun()
+# Search bar
+with st.container():
+    query_input = st.text_input(
+        "Query",
+        value=st.session_state.query_input,
+        placeholder="Ask anything about your compliance documents…",
+        label_visibility="collapsed"
+    )
+    c1, c2, c3 = st.columns([2.2, 1.2, 6.6])
+    with c1:
+        ask_clicked = st.button("🔍 Ask DocSentinel", type="primary", use_container_width=True)
+    with c2:
+        if st.button("✕ Clear", type="secondary", use_container_width=True):
+            st.session_state.query_input = ""
+            st.session_state.last_response = None
+            st.rerun()
 
 if ask_clicked:
     st.session_state.query_input = query_input
     execute_query(query_input)
 
-# --- 5. Display Pipeline Response ---
-if "last_response" in st.session_state and st.session_state.last_response is not None:
-    res = st.session_state.last_response
+# ── Response ──
+if st.session_state.last_response is not None:
+    res    = st.session_state.last_response
     status = res.get("status")
     answer = res.get("answer")
     citations = res.get("citations", [])
-    avg_conf = res.get("avg_confidence")
-    latency = res.get("latency_ms", 0.0)
-    cached = res.get("cached", False)
+    avg_conf  = res.get("avg_confidence")
     hallucination_flagged = res.get("hallucination_flagged", False)
 
-    st.markdown("### Response Analysis")
+    st.markdown('<hr class="ds-divider">', unsafe_allow_html=True)
+    st.markdown("**Response**", unsafe_allow_html=False)
 
-    # A. SUCCESS
+    # ── Status badge ──
     if status == "SUCCESS":
-        st.success("#### ✅ Answer Found")
-        st.write(answer)
-        
-        if hallucination_flagged:
-            st.warning("⚠️ **Warning:** This response was flagged for review. A potential hallucination discrepancy was detected between the answer and raw sources.")
-
-    # B. HALLUCINATION_RISK
+        badge_cls  = "resp-status-success"
+        badge_text = "✅ &nbsp;Answer Found"
     elif status == "HALLUCINATION_RISK":
-        st.error("#### ⚠️ Hallucination Risk Detected")
-        st.error("**CRITICAL SAFETY WARNING:** This response failed consistency audits. Below is the generated response, but it may contain hallucinated or unverified details.")
-        st.write(answer)
-
-    # C. BLOCKED
+        badge_cls  = "resp-status-warning"
+        badge_text = "⚠️ &nbsp;Hallucination Risk"
     elif status == "BLOCKED":
-        st.error("#### 🚫 Query Blocked")
-        st.error("DocSentinel aborted generation because the retrieved source documents did not meet the required trustworthiness threshold.")
-        st.info(f"**Average Source Chunk Confidence:** {avg_conf * 100:.1f}% (Minimum threshold is 50.0%)")
+        badge_cls  = "resp-status-blocked"
+        badge_text = "🚫 &nbsp;Blocked — Low Confidence"
+    else:
+        badge_cls  = "resp-status-warning"
+        badge_text = "⚠️ &nbsp;Insufficient Context"
 
-    # D. INSUFFICIENT_CONTEXT
-    elif status == "INSUFFICIENT_CONTEXT":
-        st.warning("#### ⚠️ Insufficient Information")
-        st.info("The available compliance policy documents do not contain enough information to formulate a reliable response to this query.")
+    st.markdown(f'<span class="{badge_cls}">{badge_text}</span>', unsafe_allow_html=True)
 
-    # --- Metadata & Citation displays (for SUCCESS and HALLUCINATION_RISK) ---
-    if status in ["SUCCESS", "HALLUCINATION_RISK"] and answer:
-        # Confidence score only — clean single metric
+    # ── Answer text ──
+    if status in ("SUCCESS", "HALLUCINATION_RISK") and answer:
+        st.markdown(answer)
+
+        # Confidence badge
         if avg_conf is not None:
             conf_pct = avg_conf * 100
             if conf_pct >= 75:
-                conf_color = "#22c55e"  # green
+                conf_color = "#22c55e"
             elif conf_pct >= 55:
-                conf_color = "#f59e0b"  # amber
+                conf_color = "#f59e0b"
             else:
-                conf_color = "#ef4444"  # red
-
+                conf_color = "#ef4444"
             st.markdown(
-                f"""<div style="margin-top:12px; display:inline-block; background:#161b22;
-                border:1px solid #30363d; border-radius:8px; padding:8px 18px;">
-                <span style="color:#8b949e; font-size:13px;">Source Confidence&nbsp;&nbsp;</span>
-                <span style="color:{conf_color}; font-size:18px; font-weight:700;">{conf_pct:.1f}%</span>
-                </div>""",
+                f'<div class="conf-badge">Source Confidence &nbsp; '
+                f'<span class="conf-value" style="color:{conf_color};">{conf_pct:.1f}%</span></div>',
                 unsafe_allow_html=True
             )
 
+        if hallucination_flagged:
+            st.warning("⚠️ This response was flagged during the hallucination audit. Review sources carefully.")
 
-        # Citations Expander
+        # Citations
         if citations:
-            with st.expander("📎 Sources & Reference Citations"):
-                citation_records = []
+            with st.expander("📎 Source Citations"):
+                records = []
                 for c in citations:
-                    # Clean timestamp format
                     ret_at = c.get("retrieved_at", "")
-                    if ret_at:
-                        try:
-                            ret_at = datetime.fromisoformat(ret_at).strftime("%Y-%m-%d %H:%M:%S")
-                        except Exception:
-                            pass
-                    
-                    citation_records.append({
-                        "Citation Index": c.get("reference"),
+                    try:
+                        ret_at = datetime.fromisoformat(ret_at).strftime("%Y-%m-%d %H:%M")
+                    except Exception:
+                        pass
+                    records.append({
                         "Source Document": c.get("source"),
-                        "Page Number": c.get("page_number"),
+                        "Page": c.get("page_number"),
                         "Match Score": f"{c.get('confidence_score', 0.0) * 100:.1f}%",
-                        "Retrieved At": ret_at
+                        "Retrieved At": ret_at,
                     })
-                
-                df = pd.DataFrame(citation_records)
-                st.dataframe(df, use_container_width=True, hide_index=True)
+                st.dataframe(pd.DataFrame(records), use_container_width=True, hide_index=True)
 
+    elif status == "BLOCKED":
+        conf_pct = avg_conf * 100 if avg_conf else 0
+        st.info(f"Retrieved sources had an average confidence of **{conf_pct:.1f}%**, below the required 50% threshold. Try rephrasing your question or uploading a more relevant document.")
 
-# --- 6. Recent Queries Section ---
+    elif status == "INSUFFICIENT_CONTEXT":
+        st.info("The available documents do not contain enough information to answer this question reliably. Try uploading a relevant document first.")
+
+# ── Recent Queries ──
 if st.session_state.history:
-    st.markdown("<br><br>", unsafe_allow_html=True)
-    st.subheader("🕒 Recent Queries")
-    for past_query in st.session_state.history:
-        if st.button(f"🔍 {past_query}", key=f"hist_{past_query}"):
-            st.session_state.query_input = past_query
-            execute_query(past_query)
-            st.rerun()
+    st.markdown('<hr class="ds-divider">', unsafe_allow_html=True)
+    st.markdown('<div class="recent-label">Recent Queries</div>', unsafe_allow_html=True)
+    cols = st.columns(min(len(st.session_state.history), 3))
+    for i, past_query in enumerate(st.session_state.history):
+        with cols[i % 3]:
+            short = past_query[:55] + "…" if len(past_query) > 55 else past_query
+            if st.button(f"↩ {short}", key=f"hist_{i}", use_container_width=True, type="secondary"):
+                st.session_state.query_input = past_query
+                execute_query(past_query)
+                st.rerun()

@@ -19,6 +19,7 @@ load_dotenv()  # Load .env variables (QDRANT_HOST, QDRANT_PORT)
 
 import os
 from qdrant_client import QdrantClient
+from qdrant_client.models import Filter, FieldCondition, MatchValue, MatchAny
 from sentence_transformers import SentenceTransformer
 
 
@@ -61,13 +62,14 @@ class SemanticRetriever:
     # -------------------------------------------------------------------
     # Search
     # -------------------------------------------------------------------
-    def search(self, query: str, top_k: int = 20) -> list[dict]:
+    def search(self, query: str, top_k: int = 20, session_id: str = "global") -> list[dict]:
         """
         Embed the query and find the most similar chunks in Qdrant.
 
         Args:
             query:  Free-text search string.
             top_k:  Maximum number of results to return.
+            session_id: Scope filter — returns chunks from this session AND global chunks.
 
         Returns:
             List of dicts with keys: chunk_id, chunk_text, semantic_score.
@@ -81,12 +83,21 @@ class SemanticRetriever:
             # --- Step 1: Embed the query --------------------------------
             query_vector = model.encode(query).tolist()
 
-            # --- Step 2: Search Qdrant ----------------------------------
+            # --- Step 2: Search Qdrant with session scope filter ---
+            # Returns chunks belonging to this session OR global (admin) chunks
+            session_filter = Filter(
+                should=[
+                    FieldCondition(key="session_id", match=MatchValue(value=session_id)),
+                    FieldCondition(key="session_id", match=MatchValue(value="global")),
+                ]
+            )
+
             response = self.client.query_points(
                 collection_name=self.collection_name,
                 query=query_vector,
                 limit=top_k,
                 with_payload=True,
+                query_filter=session_filter,
             )
 
             # --- Step 3: Format results ---------------------------------

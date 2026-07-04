@@ -3,6 +3,7 @@ app.py - Streamlit User Interface for DocSentinel Compliance Assistant
 ======================================================================
 """
 
+import uuid
 import time
 import requests
 import pandas as pd
@@ -59,6 +60,10 @@ if "history" not in st.session_state:
 if "query_input" not in st.session_state:
     st.session_state.query_input = ""
 
+# Generate a unique session_id for this browser session
+if "session_id" not in st.session_state:
+    st.session_state.session_id = str(uuid.uuid4())
+
 
 # --- Helper to Trigger Query Run ---
 def execute_query(query_text):
@@ -73,8 +78,11 @@ def execute_query(query_text):
 
     with st.spinner("🔍 Searching documents and verifying trust..."):
         try:
-            # Query the API
-            payload = {"query": query_text, "min_confidence": 0.50}
+            payload = {
+                "query": query_text,
+                "min_confidence": 0.50,
+                "session_id": st.session_state.session_id,
+            }
             response = requests.post(f"{API_URL}/query", json=payload, timeout=30)
             
             if response.status_code == 200:
@@ -136,7 +144,12 @@ with st.sidebar:
             with st.spinner("⏳ Parsing, chunking and embedding document..."):
                 try:
                     files = {"file": (uploaded_file.name, uploaded_file.getvalue(), "application/pdf")}
-                    up_resp = requests.post(f"{API_URL}/upload", files=files, timeout=120)
+                    up_resp = requests.post(
+                        f"{API_URL}/upload",
+                        files=files,
+                        data={"session_id": st.session_state.session_id},
+                        timeout=120
+                    )
                     
                     if up_resp.status_code == 200:
                         up_data = up_resp.json()
@@ -149,7 +162,29 @@ with st.sidebar:
 
     st.markdown("---")
 
-    # D. Cache Management
+    # D. Session Management
+    st.subheader("🗂️ My Session")
+    st.caption(f"Session ID: `{st.session_state.session_id[:8]}...`")
+    st.caption("GDPR & EU AI Act are always available to all users.")
+    if st.button("🗑️ Clear My Documents", use_container_width=True, type="secondary"):
+        try:
+            del_resp = requests.delete(
+                f"{API_URL}/session/{st.session_state.session_id}", timeout=10
+            )
+            if del_resp.status_code == 200:
+                data = del_resp.json()
+                st.success(f"Cleared {data.get('chunks_deleted', 0)} chunks from your session.")
+                # Generate a fresh session_id
+                st.session_state.session_id = str(uuid.uuid4())
+                st.rerun()
+            else:
+                st.error("Failed to clear session.")
+        except Exception as exc:
+            st.error(f"Error: {exc}")
+
+    st.markdown("---")
+
+    # E. Cache Management
     st.subheader("🧹 Cache Management")
     if st.button("Clear Semantic Cache", use_container_width=True, type="secondary"):
         try:
@@ -228,15 +263,25 @@ if "last_response" in st.session_state and st.session_state.last_response is not
 
     # --- Metadata & Citation displays (for SUCCESS and HALLUCINATION_RISK) ---
     if status in ["SUCCESS", "HALLUCINATION_RISK"] and answer:
-        # Metrics row
-        st.markdown("<br>", unsafe_allow_html=True)
-        m_col1, m_col2, m_col3 = st.columns(3)
-        with m_col1:
-            st.metric("Avg Source Confidence", f"{avg_conf * 100:.1f}%" if avg_conf else "N/A")
-        with m_col2:
-            st.metric("Processing Latency", f"{latency:.0f} ms")
-        with m_col3:
-            st.metric("Served From Cache", "Yes" if cached else "No")
+        # Confidence score only — clean single metric
+        if avg_conf is not None:
+            conf_pct = avg_conf * 100
+            if conf_pct >= 75:
+                conf_color = "#22c55e"  # green
+            elif conf_pct >= 55:
+                conf_color = "#f59e0b"  # amber
+            else:
+                conf_color = "#ef4444"  # red
+
+            st.markdown(
+                f"""<div style="margin-top:12px; display:inline-block; background:#161b22;
+                border:1px solid #30363d; border-radius:8px; padding:8px 18px;">
+                <span style="color:#8b949e; font-size:13px;">Source Confidence&nbsp;&nbsp;</span>
+                <span style="color:{conf_color}; font-size:18px; font-weight:700;">{conf_pct:.1f}%</span>
+                </div>""",
+                unsafe_allow_html=True
+            )
+
 
         # Citations Expander
         if citations:

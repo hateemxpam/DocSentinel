@@ -82,7 +82,6 @@ def _fetch_metadata_postgres(chunk_ids: list[str]) -> dict:
         conn = psycopg2.connect(postgres_url)
         cur = conn.cursor()
 
-        # Build a parameterised IN clause:  WHERE chunk_id IN (%s, %s, …)
         placeholders = ", ".join(["%s"] * len(chunk_ids))
         query = (
             f"SELECT chunk_id, source, page_number, doc_type, version, "
@@ -176,23 +175,21 @@ def _fetch_metadata_qdrant(chunk_ids: list[str]) -> dict:
 # ---------------------------------------------------------------------------
 # Main retrieval function
 # ---------------------------------------------------------------------------
-def retrieve(query: str) -> list[dict]:
+def retrieve(query: str, session_id: str = "global") -> list[dict]:
     """Run the full retrieval pipeline and return enriched chunks.
 
     Steps:
-        1. Hybrid search  – BM25 ∪ semantic → ~30 merged candidates
+        1. Hybrid search  – BM25 ∪ semantic → ~30 merged candidates (session-scoped)
         2. Rerank         – cross-encoder refinement → top 10
         3. Metadata fetch – Postgres first, Qdrant fallback
         4. Enrich         – merge metadata into each result dict
 
     Args:
         query: Natural-language user query.
+        session_id: Scope filter — returns chunks from this session + global chunks.
 
     Returns:
-        List of dicts, each containing:
-            chunk_id, chunk_text, reranker_score, rrf_score,
-            in_bm25, in_semantic, source, page_number, doc_type,
-            version, date_ingested, trust_score, content_type
+        List of dicts with full chunk metadata.
     """
     try:
         print("\n--- Retrieval Pipeline ---")
@@ -201,7 +198,7 @@ def retrieve(query: str) -> list[dict]:
         # Step 1: Hybrid search (BM25 + semantic, merged via RRF)
         # top_k=20 per sub-search → ~30 merged candidates after RRF union
         # ------------------------------------------------------------------
-        hybrid_candidates = hybrid_search(query, top_k=20)
+        hybrid_candidates = hybrid_search(query, top_k=20, session_id=session_id)
         print(f"[Step 1] Hybrid search returned {len(hybrid_candidates)} candidates.")
 
         # ------------------------------------------------------------------

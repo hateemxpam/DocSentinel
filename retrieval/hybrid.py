@@ -10,11 +10,11 @@ Reference: Cormack, Clarke & Buettcher (2009) - "Reciprocal Rank Fusion outperfo
 Condorcet and individual Rank Learning Methods"
 """
 
-from retrieval.bm25_retriever import bm25_retriever
+from retrieval.bm25_retriever import build_bm25_retriever
 from retrieval.semantic_retriever import semantic_retriever
 
 
-def search(query: str, top_k: int = 20) -> list[dict]:
+def search(query: str, top_k: int = 20, session_id: str = "global") -> list[dict]:
     """
     Run hybrid search combining BM25 (sparse) and semantic (dense) retrieval,
     then merge results using Reciprocal Rank Fusion.
@@ -22,25 +22,22 @@ def search(query: str, top_k: int = 20) -> list[dict]:
     Args:
         query: The user's search query string.
         top_k: Number of candidates to retrieve from each individual retriever.
+        session_id: Scope filter — only returns chunks from this session + global chunks.
 
     Returns:
         A list of dicts, each containing:
-            - chunk_id: Unique identifier for the text chunk.
-            - chunk_text: The raw text of the chunk.
-            - rrf_score: The fused RRF score (higher is better).
-            - in_bm25: Whether this chunk appeared in BM25 results.
-            - in_semantic: Whether this chunk appeared in semantic results.
+            - chunk_id, chunk_text, rrf_score, in_bm25, in_semantic
     """
-    # --- Step 1: Retrieve candidates from both systems ---
-    # Guard against a retriever being None (e.g., index not built yet).
+    # Build a session-scoped BM25 retriever per request
+    bm25 = build_bm25_retriever(session_id=session_id)
     try:
-        bm25_results = bm25_retriever.search(query, top_k=top_k) if bm25_retriever is not None else []
+        bm25_results = bm25.search(query, top_k=top_k) if bm25 is not None else []
     except Exception as exc:
         print(f"  [hybrid] BM25 retrieval failed: {exc}")
         bm25_results = []
 
     try:
-        semantic_results = semantic_retriever.search(query, top_k=top_k) if semantic_retriever is not None else []
+        semantic_results = semantic_retriever.search(query, top_k=top_k, session_id=session_id) if semantic_retriever is not None else []
     except Exception as exc:
         print(f"  [hybrid] Semantic retrieval failed: {exc}")
         semantic_results = []

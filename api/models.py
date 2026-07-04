@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field
 class QueryRequest(BaseModel):
     query: str = Field(..., description="The compliance query to execute.")
     min_confidence: float = Field(0.45, description="Minimum confidence threshold to pass the quality gate.")
+    session_id: str = Field("global", description="Session identifier for scoped retrieval and caching.")
 
 
 class Citation(BaseModel):

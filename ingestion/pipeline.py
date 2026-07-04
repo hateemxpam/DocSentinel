@@ -10,7 +10,7 @@ from ingestion.embedder import generate_embeddings
 from ingestion.store import store_in_qdrant, store_in_postgres
 
 
-def run(specific_file: str | None = None) -> int:
+def run(specific_file: str | None = None, session_id: str = "global") -> int:
     """
     Execute the complete ingestion pipeline.
 
@@ -19,9 +19,15 @@ def run(specific_file: str | None = None) -> int:
         2. Chunk the extracted text.
         3. Generate metadata.
         4. Generate vector embeddings.
-        5. Store chunks in Qdrant.
-        6. Store metadata in PostgreSQL.
-        
+        5. Store chunks in Qdrant (tagged with session_id).
+        6. Store metadata in PostgreSQL (tagged with session_id).
+
+    Args:
+        specific_file: Path to a single PDF to ingest. If None, all PDFs in data/raw/ are ingested.
+        session_id: Scope identifier for this batch of chunks.
+                    Use 'global' for shared admin documents (GDPR, EU AI Act).
+                    Use a user UUID for user-uploaded documents.
+
     Returns:
         int: Number of chunks stored.
     """
@@ -44,13 +50,13 @@ def run(specific_file: str | None = None) -> int:
         print('[4/6] Generating embeddings...')
         embeddings = generate_embeddings(chunks)
 
-        # Step 5 — Store in Qdrant
-        print('[5/6] Storing in Qdrant...')
-        store_in_qdrant(chunks, metadata_list, embeddings)
+        # Step 5 — Store in Qdrant (with session_id in payload)
+        print(f'[5/6] Storing in Qdrant (session: {session_id})...')
+        store_in_qdrant(chunks, metadata_list, embeddings, session_id=session_id)
 
-        # Step 6 — Store metadata in PostgreSQL
-        print('[6/6] Storing metadata in PostgreSQL...')
-        store_in_postgres(chunks, metadata_list)
+        # Step 6 — Store metadata in PostgreSQL (with session_id column)
+        print(f'[6/6] Storing metadata in PostgreSQL (session: {session_id})...')
+        store_in_postgres(chunks, metadata_list, session_id=session_id)
 
         print(f'\nIngestion complete. {len(chunks)} chunks stored.')
         return len(chunks)

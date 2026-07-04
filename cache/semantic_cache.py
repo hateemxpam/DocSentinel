@@ -44,12 +44,13 @@ def cosine_similarity(vec1: list, vec2: list) -> float:
     return float(np.dot(v1, v2) / (norm1 * norm2))
 
 
-def get_cached(query: str, threshold: float = 0.92) -> dict | None:
+def get_cached(query: str, session_id: str = "global", threshold: float = 0.92) -> dict | None:
     """
-    Check the cache for a semantically similar query.
+    Check the cache for a semantically similar query within the same session.
 
     Args:
         query: The raw query text.
+        session_id: Only match cache entries from this session or global.
         threshold: Cosine similarity threshold to define a match.
 
     Returns:
@@ -67,7 +68,27 @@ def get_cached(query: str, threshold: float = 0.92) -> dict | None:
         conn = get_db_connection()
         cur = conn.cursor()
         
-        cur.execute("SELECT id, query_text, query_embedding, response FROM query_cache")
+        # Ensure cache table has session_id column
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS query_cache (
+                id              SERIAL PRIMARY KEY,
+                query_text      TEXT,
+                query_embedding FLOAT[],
+                response        JSONB,
+                created_at      TIMESTAMP,
+                hit_count       INTEGER DEFAULT 0,
+                session_id      VARCHAR DEFAULT 'global'
+            );
+        """)
+        cur.execute("""
+            ALTER TABLE query_cache ADD COLUMN IF NOT EXISTS session_id VARCHAR DEFAULT 'global';
+        """)
+        conn.commit()
+
+        cur.execute(
+            "SELECT id, query_text, query_embedding, response FROM query_cache WHERE session_id = %s OR session_id = 'global'",
+            (session_id,)
+        )
         rows = cur.fetchall()
         
         best_match_id = None
@@ -117,13 +138,14 @@ def get_cached(query: str, threshold: float = 0.92) -> dict | None:
         return None
 
 
-def store_cache(query: str, response: dict) -> None:
+def store_cache(query: str, response: dict, session_id: str = "global") -> None:
     """
-    Store the query and its response in the cache.
+    Store the query and its response in the session-scoped cache.
 
     Args:
         query: The raw query string.
         response: The final pipeline response dict.
+        session_id: Session scope for this cache entry.
     """
     if model is None:
         print("[cache] Warning: Embedding model not loaded. Cannot store cache.")
@@ -147,10 +169,10 @@ def store_cache(query: str, response: dict) -> None:
         
         cur.execute(
             """
-            INSERT INTO query_cache (query_text, query_embedding, response, created_at)
-            VALUES (%s, %s, %s, %s)
+            INSERT INTO query_cache (query_text, query_embedding, response, created_at, session_id)
+            VALUES (%s, %s, %s, %s, %s)
             """,
-            (query, query_vector, response_json, datetime.now())
+            (query, query_vector, response_json, datetime.now(), session_id)
         )
         
         conn.commit()

@@ -27,14 +27,14 @@ from qdrant_client import QdrantClient
 class BM25Retriever:
     """Builds and queries a BM25Okapi index over document chunks."""
 
-    def __init__(self) -> None:
+    def __init__(self, session_id: str = "global") -> None:
         """
-        Load all chunk texts and chunk IDs at startup.
+        Load chunk texts for the given session from PostgreSQL or Qdrant.
 
-        Attempts PostgreSQL first; falls back to Qdrant on any connection
-        error.  After loading, tokenises every chunk and builds the BM25
-        index.
+        Loads chunks where session_id matches the user's session OR 'global',
+        so users always have access to the shared admin documents.
         """
+        self.session_id = session_id
         self.chunk_ids: list[str] = []
         self.chunk_texts: list[str] = []
         self.bm25: BM25Okapi | None = None
@@ -47,7 +47,10 @@ class BM25Retriever:
 
             conn = psycopg2.connect(postgres_url)
             cursor = conn.cursor()
-            cursor.execute("SELECT chunk_id, chunk_text FROM chunks")
+            cursor.execute(
+                "SELECT chunk_id, chunk_text FROM chunks WHERE session_id = %s OR session_id = 'global'",
+                (session_id,)
+            )
             rows = cursor.fetchall()
             cursor.close()
             conn.close()
@@ -148,14 +151,27 @@ class BM25Retriever:
             return []
 
 
+
 # ---------------------------------------------------------------------------
-# Module-level singleton
+# Factory function — creates a per-request BM25Retriever scoped to a session
 # ---------------------------------------------------------------------------
-# Create a single, reusable BM25Retriever instance.  Other modules can
-# simply:  from retrieval.bm25_retriever import bm25_retriever
+def build_bm25_retriever(session_id: str = "global") -> BM25Retriever:
+    """
+    Build a BM25Retriever instance scoped to the given session_id.
+    Called per-request so each user sees only their own + global chunks.
+    """
+    try:
+        return BM25Retriever(session_id=session_id)
+    except Exception as init_err:
+        print(f"WARNING: Could not build BM25Retriever for session '{session_id}': {init_err}")
+        return None
+
+
+# Backward-compat singleton for health checks and startup (loads global chunks only)
 try:
-    bm25_retriever = BM25Retriever()
+    bm25_retriever = BM25Retriever(session_id="global")
 except Exception as init_err:
     print(f"WARNING: Could not initialise BM25Retriever singleton ({init_err}). "
           "bm25_retriever is set to None.")
     bm25_retriever = None
+

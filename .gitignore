@@ -25,3 +25,7 @@ build/
 # Office / Temporary documents
 *.docx
 ~$*
+*.tmp
+
+# Raw local document uploads
+data/

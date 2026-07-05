@@ -391,27 +391,6 @@ with st.sidebar:
     except Exception:
         st.markdown('<div class="status-row"><span class="status-label">API</span><span class="status-fail">● Unreachable</span></div>', unsafe_allow_html=True)
 
-    # ── Total Queries ──
-    st.markdown('<div class="sb-label">Usage</div>', unsafe_allow_html=True)
-    try:
-        stats_resp = requests.get(f"{API_URL}/stats", timeout=10)
-        if stats_resp.status_code == 200:
-            stats = stats_resp.json()
-            total = stats.get("total_queries", 0)
-            st.markdown(f"""
-            <div class="stat-chip">
-                <span class="stat-chip-icon">💬</span>
-                <div>
-                    <div class="stat-chip-val">{total:,}</div>
-                    <div class="stat-chip-desc">Total Queries Processed</div>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-        else:
-            st.caption("Stats unavailable")
-    except Exception:
-        st.caption("Stats unavailable")
-
     # ── Upload ──
     st.markdown('<div class="sb-label">Upload Document</div>', unsafe_allow_html=True)
     uploaded_file = st.file_uploader(

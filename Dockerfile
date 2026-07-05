@@ -18,8 +18,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy all project files
 COPY . .
 
-# Make start script executable
-RUN chmod +x start.sh
+# Make start script executable and fix CRLF line endings (Windows -> Linux)
+RUN chmod +x start.sh && sed -i 's/\r//' start.sh
 
 # Expose port 7860 (Hugging Face default)
 EXPOSE 7860

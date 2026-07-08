@@ -38,6 +38,25 @@ html, body, [class*="css"] {
 #MainMenu, footer, header { visibility: hidden; }
 .stDeployButton { display: none; }
 
+/* ── Collapsed Sidebar Toggle Button (Mobile/UX) ── */
+[data-testid="collapsedControl"] {
+    background-color: #0f1923 !important;
+    border: 1px solid #1e2a3a !important;
+    border-radius: 0 8px 8px 0 !important;
+    top: 60px !important; /* Positions it clearly below HF headers */
+    left: 0 !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6) !important;
+    padding: 6px 10px !important;
+    transition: all 0.2s ease-in-out !important;
+}
+[data-testid="collapsedControl"]:hover {
+    border-color: #58a6ff !important;
+}
+[data-testid="collapsedControl"] button {
+    color: #58a6ff !important;
+    transform: scale(1.15) !important;
+}
+
 /* ── Sidebar ── */
 [data-testid="stSidebar"] {
     background: linear-gradient(180deg, #0d1117 0%, #0d1320 100%);

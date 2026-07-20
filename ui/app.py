@@ -7,6 +7,7 @@ import uuid
 import requests
 import pandas as pd
 import streamlit as st
+import streamlit.components.v1 as components
 from datetime import datetime
 
 # API Connection settings
@@ -37,25 +38,6 @@ html, body, [class*="css"] {
 /* ── Hide Streamlit chrome ── */
 #MainMenu, footer, header { visibility: hidden; }
 .stDeployButton { display: none; }
-
-/* ── Collapsed Sidebar Toggle Button (Mobile/UX) ── */
-[data-testid="collapsedControl"] {
-    background-color: #0f1923 !important;
-    border: 1px solid #1e2a3a !important;
-    border-radius: 0 8px 8px 0 !important;
-    top: 60px !important; /* Positions it clearly below HF headers */
-    left: 0 !important;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6) !important;
-    padding: 6px 10px !important;
-    transition: all 0.2s ease-in-out !important;
-}
-[data-testid="collapsedControl"]:hover {
-    border-color: #58a6ff !important;
-}
-[data-testid="collapsedControl"] button {
-    color: #58a6ff !important;
-    transform: scale(1.15) !important;
-}
 
 /* ── Sidebar ── */
 [data-testid="stSidebar"] {
@@ -450,6 +432,49 @@ with st.sidebar:
 # ═══════════════════════════════════════════════
 #  MAIN PANEL
 # ═══════════════════════════════════════════════
+
+# ── Sidebar toggle button (works on mobile & desktop via window.parent JS) ──
+components.html("""
+<html>
+<body style="margin:0; padding:0; background:transparent;">
+<button id="sb-btn"
+    onclick="
+        var el = window.parent.document.querySelector('[data-testid=\'collapsedControl\'] button');
+        if(el) el.click();
+    "
+    style="
+        display: none;
+        background: linear-gradient(135deg, #1f6feb 0%, #388bfd 100%);
+        border: none;
+        border-radius: 8px;
+        color: #ffffff;
+        padding: 8px 14px;
+        font-size: 15px;
+        font-family: Inter, sans-serif;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 4px 14px rgba(31,111,235,0.45);
+        transition: opacity 0.2s;
+    "
+>&#9776; Open Panel</button>
+<script>
+    function syncBtn() {
+        var btn = document.getElementById('sb-btn');
+        var sidebar = window.parent.document.querySelector('[data-testid=\'stSidebar\']');
+        if (!btn) return;
+        // sidebar is visible when its width is above a threshold
+        if (sidebar && sidebar.getBoundingClientRect().width < 50) {
+            btn.style.display = 'inline-block';
+        } else {
+            btn.style.display = 'none';
+        }
+    }
+    setInterval(syncBtn, 400);
+    syncBtn();
+</script>
+</body>
+</html>
+""", height=50)
 
 # Header
 st.markdown("""
